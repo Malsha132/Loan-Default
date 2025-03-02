@@ -1,84 +1,73 @@
 import streamlit as st
 import joblib
 import pandas as pd
-import numpy as np
 
-# Cache loading of models to optimize performance
-@st.cache_resource
-def load_model():
-    return joblib.load('classification_model_personal.pkl')
+# Load your pre-trained model and scaler
+model = joblib.load("classification_model_personal.pkl")
+scaler = joblib.load("c_scaler.pkl")
+columns = joblib.load("c_X_train.pkl")
 
-@st.cache_resource
-def load_scaler():
-    return joblib.load('c_scaler.pkl')
+# Function for prediction
+def predict_loan_default(input_data):
+    input_data_scaled = scaler.transform(input_data)  # Scaling the input
+    prediction = model.predict(input_data_scaled)  # Prediction
+    return prediction[0]
 
-@st.cache_resource
-def load_columns():
-    return joblib.load('c_X_train.pkl')
+# App header and description
+st.title('Loan Default Risk Prediction')
+st.write('This app predicts whether a loan is at risk of default based on customer and loan details.')
 
-# Load the trained model, scaler, and reference feature names
-model = load_model()
-scaler = load_scaler()
-columns = load_columns()
+# Input form for the user
+with st.form(key='loan_form'):
+    qspurposedes = st.selectbox('Loan Purpose', ['CONSTRUCTION', 'EDUCATION', 'INVESTMENT', 'PERSONAL NEEDS', 'PURCHASE OF PROPERTY', 'PURCHASE OF VEHICLE', 'WORKING CAPITAL REQUIREMENT'])
+    qsector = st.selectbox('Sector', ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTURING & LOGISTIC', 'FINANCIAL', 'CONSTRUCTION & INFRASTRUCTURE', 'EDUCATION', 'TECHNOLOGY & INNOVATION', 'TOURISM', 'HEALTHCARE', 'TRADERS', 'AGRICULTURE & FISHING', 'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV'])
+    lnbase = st.selectbox('Base', ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE', 'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED'])
+    sex = st.selectbox('Gender', ['M', 'F'])
+    lnpayfreq = st.selectbox('Payment Frequency', ['Monthly', 'Quarterly', 'Annually'])
+    credit_card_used = st.selectbox('Used Credit Card', ['Yes', 'No'])
+    debit_card_used = st.selectbox('Used Debit Card', ['Yes', 'No'])
+    lnperiod_category = st.selectbox('Loan Period Category', ['Short Term', 'Medium Term', 'Long Term'])
+    lnamount = st.slider('Loan Amount', min_value=1000, max_value=1000000, step=1000)
+    lninstamt = st.slider('Installment Amount', min_value=100, max_value=100000, step=100)
+    average_sagbal = st.slider('Average Savings Account Balance', min_value=0, max_value=1000000, step=1000)
+    age = st.slider('Age', min_value=18, max_value=80)
+    lnintrate = st.slider('Interest Rate', min_value=0.1, max_value=20.0, step=0.1)
+    
+    submit_button = st.form_submit_button(label='Predict Default Risk')
 
-# Set Streamlit page title
-st.title("Loan Default Risk Prediction")
+# Process and predict on user input
+if submit_button:
+    # Create a DataFrame from user inputs
+    user_input = pd.DataFrame({
+        'QSPURPOSEDES': [qspurposedes],
+        'QS_SECTOR': [qsector],
+        'LNBASELDESC': [lnbase],
+        'SEX': [sex],
+        'LNPAYFREQ': [lnpayfreq],
+        'CREDIT_CARD_USED': [credit_card_used],
+        'DEBIT_CARD_USED': [debit_card_used],
+        'LNPERIOD_CATEGORY': [lnperiod_category],
+        'LNAMOUNT': [lnamount],
+        'LNINSTAMT': [lninstamt],
+        'AVERAGE_SAGBAL': [average_sagbal],
+        'AGE': [age],
+        'LNINTRATE': [lnintrate]
+    })
 
-# Dropdowns for categorical variables
-sex = st.selectbox('Sex', ['M', 'F'])
-qs_sector = st.selectbox('Sector', ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTURING & LOGISTICS',
-                                    'FINANCIAL', 'CONSTRUCTION & INFRASTRUCTURE', 'EDUCATION',
-                                    'TECHNOLOGY & INNOVATION', 'TOURISM', 'HEALTHCARE',
-                                    'TRADERS', 'AGRICULTURE & FISHING',
-                                    'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV'])
-qspurposedes = st.selectbox('Loan Purpose', ['CONSTRUCTION', 'EDUCATION', 'INVESTMENT', 'PERSONAL NEEDS',
-                                             'PURCHASE OF PROPERTY', 'PURCHASE OF VEHICLE', 'WORKING CAPITAL REQUIREMENT'])
-lnbaseldesc = st.selectbox('Loan Base Description', ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE',
-                                                     'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED'])
-lnpayfreq = st.selectbox('Payment Frequency', [2, 5, 12])
-credit_card_used = st.selectbox('Credit Card Used', ['No', 'Yes'])
-debit_card_used = st.selectbox('Debit Card Used', ['No', 'Yes'])
-lnperiod_category = st.selectbox('Loan Period Category', ['SHORT-TERM', 'MEDIUM-TERM'])
+    # Apply one-hot encoding to categorical inputs
+    user_input = pd.get_dummies(user_input, columns=['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX', 'LNPAYFREQ', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED', 'LNPERIOD_CATEGORY'], drop_first=True)
+    
+    # Add missing columns if any
+    missing_cols = set(columns) - set(user_input.columns)
+    for col in missing_cols:
+        user_input[col] = 0
+    user_input = user_input[columns]
 
-# Slider for numerical inputs
-age = st.slider('Age', min_value=18, max_value=80, value=30)
-lnamount = st.number_input('Loan Amount', min_value=1000, max_value=1000000, value=50000)
-lninstamt = st.number_input('Installment Amount', min_value=100, max_value=10000, value=1000)
-lnintrate = st.number_input('Interest Rate', min_value=0.1, max_value=50.0, value=12.0)
-averagesagbal = st.number_input('Average Savings Balance', min_value=0, max_value=1000000, value=20000)
+    # Make the prediction
+    prediction = predict_loan_default(user_input)
 
-# Prepare user input into a DataFrame
-input_data = pd.DataFrame([[lnamount, lnintrate, lninstamt, age, averagesagbal, qspurposedes, qs_sector,
-                            lnbaseldesc, sex, lnpayfreq, credit_card_used, debit_card_used, lnperiod_category]],
-                          columns=['LNAMOUNT', 'LNINTRATE', 'LNINSTAMT', 'AGE', 'AVERAGE_SAGBAL', 'QSPURPOSEDES',
-                                   'QS_SECTOR', 'LNBASELDESC', 'SEX', 'LNPAYFREQ', 'CREDIT_CARD_USED',
-                                   'DEBIT_CARD_USED', 'LNPERIOD_CATEGORY'])
-
-# Convert categorical values to match training data
-#input_data['CREDIT_CARD_USED'] = input_data['CREDIT_CARD_USED'].map({'No': 0, 'Yes': 1})
-#input_data['DEBIT_CARD_USED'] = input_data['DEBIT_CARD_USED'].map({'No': 0, 'Yes': 1})
-
-# One-hot encode categorical variables
-input_data_encoded = pd.get_dummies(input_data, columns=['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX',
-                                                         'LNPAYFREQ', 'CREDIT_CARD_USED',
-                                   'DEBIT_CARD_USED','LNPERIOD_CATEGORY'], drop_first=True)
-
-# Ensure input matches training feature set
-input_data_encoded = input_data_encoded.reindex(columns=columns, fill_value=0)
-
-# Scale the numerical features
-num_features = ['LNAMOUNT', 'LNINSTAMT', 'AVERAGE_SAGBAL', 'AGE', 'LNINTRATE']
-input_data_encoded[num_features] = scaler.transform(input_data_encoded[num_features])
-
-# Make prediction
-prediction = model.predict(input_data_encoded)[0]
-
-# Display prediction result
-if prediction == 1:
-    st.write("The loan default risk is HIGH.")
-else:
-    st.write("The loan default risk is LOW.")
-
-# Reset button to refresh the page
-if st.button('Reset'):
-    st.experimental_rerun()
+    # Display the result
+    if prediction == 1:
+        st.write("Prediction: The loan is at risk of default.")
+    else:
+        st.write("Prediction: The loan is not at risk of default.")
