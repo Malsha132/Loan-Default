@@ -11,7 +11,9 @@ with open("classification_model_personal.pkl", "rb") as model_file:
 with open("c_scaler.pkl", "rb") as scaler_file:
     scaler = pickle.load(scaler_file)
 
-# Define the input fields
+# Load reference training data structure
+X_train_ref = pickle.load(open("c_X_train.pkl", "rb"))
+
 st.title("Loan Default Prediction")
 st.write("Enter the loan details below to predict the default status.")
 
@@ -32,13 +34,7 @@ QS_SECTOR = st.selectbox("Sector", ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTUR
 LNPERIOD_CATEGORY = st.selectbox("Loan Period Category", ['SHORT-TERM', 'MEDIUM-TERM', 'LONG-TERM'])
 AVERAGE_SAGBAL = st.slider("Average Savings Balance", min_value=0.0, max_value=1000000.0, step=500.0)
 
-# # Encoding categorical variables
-# category_mapping = {
-#     "Monthly": 0, "Quarterly": 1, "Yearly": 2,
-#     "Male": 0, "Female": 1,
-#     "Yes": 1, "No": 0
-# }
-
+# Create input DataFrame
 input_data = pd.DataFrame({
     "LNAMOUNT": [LNAMOUNT],
     "LNINTRATE": [LNINTRATE],
@@ -55,14 +51,15 @@ input_data = pd.DataFrame({
     "AVERAGE_SAGBAL": [AVERAGE_SAGBAL]
 })
 
-# One-hot encoding for categorical variables
+# One-hot encode categorical variables
 input_data = pd.get_dummies(input_data, columns=["QSPURPOSEDES", "QS_SECTOR", "LNBASELDESC","SEX","LNPAYFREQ", 'CREDIT_CARD_USED','DEBIT_CARD_USED',"LNPERIOD_CATEGORY"], drop_first=True)
 
-# Ensure all features match training data
-X_train_ref = pickle.load(open("c_X_train.pkl", "rb"))
+# Ensure all required columns exist
 missing_cols = set(X_train_ref.columns) - set(input_data.columns)
 for col in missing_cols:
-    input_data[col] = 0
+    input_data[col] = 0  # Add missing columns with default value 0
+
+# Ensure column order matches training data
 input_data = input_data[X_train_ref.columns]
 
 # Standardize numerical features
@@ -80,12 +77,3 @@ def reset_inputs():
     st.experimental_rerun()
 
 st.button("Reset", on_click=reset_inputs)
-
-
-
-
-
-
-
-
-
