@@ -48,9 +48,13 @@ if st.button("Predict Default Risk"):
     
     # Create a DataFrame and align with training features
     input_df = pd.DataFrame([input_data])
-    for col in c_X_train:
-        if col not in input_df.columns:
-            input_df[col] = 0
+    if isinstance(c_X_train, list):  
+    c_X_train = pd.DataFrame(c_X_train)  
+
+# Ensure all required columns exist in input_df
+for col in c_X_train.columns:
+    if col not in input_df.columns:
+        input_df[col] = 0
     input_df = input_df[c_X_train.columns]
     
     # Scale numerical features
