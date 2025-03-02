@@ -1,62 +1,66 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
+from sklearn.preprocessing import StandardScaler
 
-# Load pickle files using joblib
+# Load the saved model, scaler, and columns list
 model = joblib.load("classification_model_personal.pkl")
 scaler = joblib.load("c_scaler.pkl")
-X_train_ref = joblib.load("c_X_train.pkl")
+columns = joblib.load("c_X_train.pkl")
 
-# Extract column names for one-hot encoding
-categorical_columns = ['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX', 'LNPAYFREQ', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED', 'LNPERIOD_CATEGORY']
-numerical_columns = ['LNAMOUNT', 'LNINSTAMT', 'AVERAGE_SAGBAL', 'AGE', 'LNINTRATE']
+# Streamlit app title
+st.title('Loan Default Risk Prediction')
 
-# Streamlit UI
-st.title("Loan Default Prediction App")
-st.write("Enter loan details below to predict default risk.")
+# Input form for loan details
+loan_amount = st.slider('Loan Amount', 1000, 100000, 10000)
+interest_rate = st.slider('Interest Rate (%)', 1.0, 25.0, 5.0)
+loan_period = st.slider('Loan Period (Months)', 1, 60, 12)
+installment_amount = st.slider('Installment Amount', 100, 5000, 300)
+payment_frequency = st.selectbox('Payment Frequency', ['Monthly', 'Quarterly', 'Yearly'])
+sector = st.selectbox('Sector', ['CONSUMPTION', 'TOURISM', 'CONSTRUCTION', 'HEALTHCARE', 'MANUFACTURING', 'TECHNOLOGY'])
+age = st.slider('Age', 18, 80, 30)
+average_savings_balance = st.slider('Average Savings Balance', 0, 100000, 5000)
+credit_card_used = st.selectbox('Credit Card Used', [True, False])
+debit_card_used = st.selectbox('Debit Card Used', [True, False])
 
-# Create input fields
-lnamount = st.slider("Loan Amount", min_value=1000, max_value=1000000, step=1000)
-lninstamt = st.slider("Installment Amount", min_value=100, max_value=50000, step=100)
-avg_sagbal = st.slider("Average Savings Balance", min_value=0, max_value=500000, step=1000)
-age = st.slider("Age", min_value=18, max_value=80, step=1)
-lnintrate = st.slider("Interest Rate (%)", min_value=1.0, max_value=20.0, step=0.1)
+# Create DataFrame from user input
+input_data = pd.DataFrame({
+    'Loan Amount': [loan_amount],
+    'Interest Rate': [interest_rate],
+    'Loan Period': [loan_period],
+    'Installment Amount': [installment_amount],
+    'Payment Frequency': [payment_frequency],
+    'Sector': [sector],
+    'Age': [age],
+    'Average Savings Balance': [average_savings_balance],
+    'Credit Card Used': [credit_card_used],
+    'Debit Card Used': [debit_card_used]
+})
 
-# Dropdowns for categorical variables
-qpurpose = st.selectbox("Loan Purpose", X_train_ref['QSPURPOSEDES'].unique())
-qsector = st.selectbox("Sector", X_train_ref['QS_SECTOR'].unique())
-lnbase = st.selectbox("Loan Base", X_train_ref['LNBASELDESC'].unique())
-sex = st.selectbox("Sex", X_train_ref['SEX'].unique())
-lnpayfreq = st.selectbox("Payment Frequency", X_train_ref['LNPAYFREQ'].unique())
-credit_card = st.selectbox("Credit Card Used", ["Yes", "No"])
-debit_card = st.selectbox("Debit Card Used", ["Yes", "No"])
-lnperiod_cat = st.selectbox("Loan Period Category", X_train_ref['LNPERIOD_CATEGORY'].unique())
+# Apply one-hot encoding to categorical columns
+input_data_encoded = pd.get_dummies(input_data, columns=['Payment Frequency', 'Sector'], drop_first=True)
 
-# Process input
-input_data = pd.DataFrame([[lnamount, lninstamt, avg_sagbal, age, lnintrate, qpurpose, qsector, lnbase, sex, lnpayfreq, credit_card, debit_card, lnperiod_cat]],
-                          columns=numerical_columns + categorical_columns)
-input_data[['CREDIT_CARD_USED', 'DEBIT_CARD_USED']] = input_data[['CREDIT_CARD_USED', 'DEBIT_CARD_USED']].replace({"Yes": 1, "No": 0})
-
-# One-hot encoding
-input_data = pd.get_dummies(input_data, columns=categorical_columns, drop_first=True)
-
-# Align columns with training data
-missing_cols = set(X_train_ref.columns) - set(input_data.columns)
+# Ensure the same columns as the training data
+missing_cols = set(columns) - set(input_data_encoded.columns)
 for col in missing_cols:
-    input_data[col] = 0
-input_data = input_data[X_train_ref.columns]
+    input_data_encoded[col] = 0
+input_data_encoded = input_data_encoded[columns]
 
-# Scale numerical features
-input_data[numerical_columns] = scaler.transform(input_data[numerical_columns])
+# Apply scaling to the numerical columns
+input_data_scaled = scaler.transform(input_data_encoded[['Loan Amount', 'Interest Rate', 'Installment Amount', 'Age', 'Average Savings Balance']])
 
-# Prediction button
-if st.button("Predict"):
-    prediction = model.predict(input_data)
-    result = "Default" if prediction[0] == 1 else "Not Default"
-    st.subheader(f"Prediction: {result}")
+# Add scaled numerical values back to the DataFrame
+input_data_encoded[['Loan Amount', 'Interest Rate', 'Installment Amount', 'Age', 'Average Savings Balance']] = input_data_scaled
 
-# Reset button
-if st.button("Reset"):
+# Make a prediction using the trained model
+prediction = model.predict(input_data_encoded)
+
+# Display prediction result
+if prediction == 1:
+    st.write('Prediction: Loan Default Risk (Yes)')
+else:
+    st.write('Prediction: No Loan Default Risk')
+
+# Reset button functionality
+if st.button('Reset'):
     st.experimental_rerun()
-
