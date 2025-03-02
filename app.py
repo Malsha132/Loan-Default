@@ -10,19 +10,22 @@ X_train_columns = joblib.load('c_X_train.pkl')
 
 # Streamlit app UI
 st.title('Loan Default Prediction')
+loan_amount = st.number_input('Enter Loan Amount (LKR):', min_value=0, step=0.001, format="%.3f", key="loan_amount")
+interest_rate = st.number_input('Enter Loan Interest Rate (LKR):', min_value=0, step=0.001, format="%.3f", key="interest_rate")
+installment_amount = st.number_input('Enter Loan Installment (LKR):', min_value=0, step=0.001, format="%.3f", key="installment_amount")
+payment_frequency = st.selectbox('Select the Payement Frequency:', ['2', '5', '12'], key="payment_frequency")
+credit_card_used = st.radio('Credict Card Used', ['Yes', 'No'], key="credit_card_used")
+debit_card_used = st.radio('Debit Card Used', ['Yes', 'No'], key="debit_card_used")
+sector = st.selectbox('Select the Customer Sector:', ['OTHER SERVICES','CONSUMPTION','MANUFACTURING & LOGISTIC','FINANCIAL','CONSTRUCTION & INFRASTRUCTURE','EDUCATION','TECHNOLOGY & INNOVATION', 'TOURISM', 'HEALTHCARE','TRADERS' ,'AGRICULTURE & FISHINIG','PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV' ], key="sector")
+purpose = st.selectbox('Select the Loan Purpose:', ['CONSTRUCTION','EDUCATION','INVESTMENT','PERSONAL NEEDS','PURCHASE OF PROPERTY','PURCHASE OF VEHICLE','WORKING CAPITAL REQUIREMENT', key="purpose")
+gender = st.selectbox('Select the Gender:', ['F','M' ], key="gender")
+age = st.number_input('Enter Age:', min_value=0, step=0.001, format="%.3f", key="age")
+loan_period_category = st.selectbox('Select the Loan Period:', ['SHORT-TERM', 'MEDIUM-TERM', 'LONG-TERM' ], key="loan_period_category")
+avg_sagbal = st.number_input('Average Saving Balance:', min_value=0, step=0.001, format="%.3f", key="avg_sagbal")
+basel = st.selectbox('Select the Customer Group:', ['FINANCIAL INSTITUTIONS','INDIVIDUALS','MICRO FINANCE','MIDDLE MARKET CORPORATES','SME','UNCLASSIFIED'], key="basel")
 
-# Collect user inputs for loan details
-loan_amount = st.slider('Loan Amount', 1000, 100000, 10000)
-interest_rate = st.slider('Interest Rate (%)', 1.0, 25.0, 5.0)
-installment_amount = st.slider('Installment Amount', 100, 5000, 300)
-payment_frequency = st.selectbox('Payment Frequency', ['Monthly', 'Quarterly', 'Yearly'])
-sector = st.selectbox('Sector', ['CONSUMPTION', 'TOURISM', 'CONSTRUCTION', 'HEALTHCARE', 'MANUFACTURING', 'TECHNOLOGY'])
-purpose = st.selectbox('Loan Purpose', ['Personal', 'Mortgage', 'Auto Loan'])
-gender = st.selectbox('Gender', ['Male', 'Female'])
-age = st.slider('Age', 18, 100, 30)
-credit_card_used = st.selectbox('Credit Card Used', ['Yes', 'No'])
-debit_card_used = st.selectbox('Debit Card Used', ['Yes', 'No'])
-loan_period_category = st.selectbox('Loan Period Category', ['Short-term', 'Medium-term', 'Long-term'])
+
+
 
 # Create a DataFrame from inputs
 input_data = pd.DataFrame({
@@ -31,14 +34,14 @@ input_data = pd.DataFrame({
     'LNINSTAMT': [installment_amount],
     'LNPAYFREQ': [payment_frequency],
     'QSPURPOSEDES': [purpose],
-    'LNBASELDESC': [sector],
+    'LNBASELDESC': [basel],
     'SEX': [gender],
     'AGE': [age],
     'CREDIT_CARD_USED': [credit_card_used],
     'DEBIT_CARD_USED': [debit_card_used],
     'QS_SECTOR': [sector],
     'LNPERIOD_CATEGORY': [loan_period_category],
-    'AVERAGE_SAGBAL': [0]  # You can set this dynamically if needed
+    'AVERAGE_SAGBAL': [avg_sagbal]  # You can set this dynamically if needed
 })
 
 # One-hot encode categorical variables
