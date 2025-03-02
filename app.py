@@ -1,75 +1,71 @@
 import streamlit as st
+import pandas as pd
 import joblib
 import numpy as np
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
 
-# Load saved models and scaler
-classification_model = joblib.load('classification_model_personal.pkl')
-c_scaler = joblib.load('c_scaler.pkl')
-c_X_train = joblib.load('c_X_train.pkl')
+# Load the trained model, scaler, and columns list
+model = joblib.load('classification_model_personal.pkl')
+scaler = joblib.load('c_scaler.pkl')
+columns = joblib.load('c_X_train.pkl')
 
-# Title
-st.title('Loan Default Risk Predictor')
+# Function to preprocess the input data (like scaling and one-hot encoding)
+def preprocess_input(user_input):
+    # Apply necessary preprocessing steps here (scaling, encoding, etc.)
+    # Example: Convert input into a DataFrame and apply transformations
+    input_data = pd.DataFrame([user_input], columns=columns)
+    
+    # Apply scaling
+    input_data[['LNAMOUNT', 'LNINSTAMT', 'AVERAGE_SAGBAL', 'AGE', 'LNINTRATE']] = scaler.transform(input_data[['LNAMOUNT', 'LNINSTAMT', 'AVERAGE_SAGBAL', 'AGE', 'LNINTRATE']])
+    
+    # Apply one-hot encoding
+    input_data = pd.get_dummies(input_data, columns=['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX', 'LNPAYFREQ', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED', 'LNPERIOD_CATEGORY'], drop_first=True)
+    
+    # Ensure the input matches the columns used during training
+    input_data = input_data.reindex(columns=columns, fill_value=0)
+    
+    return input_data
 
-# User input fields
-LNAMOUNT = st.number_input("Loan Amount", min_value=1000, step=1000, format="%.2f")
-LNINTRATE = st.number_input("Interest Rate (%)", min_value=0.1, step=0.1, format="%.2f")
-LNPERIOD = st.slider("Loan Period (Months)", min_value=6, max_value=360, step=6)
-LNINSTAMT = st.number_input("Installment Amount", min_value=100, step=100, format="%.2f")
-LNPAYFREQ = st.selectbox("Payment Frequency", [1, 2, 3, 4])
-QSPURPOSEDES = st.selectbox("Purpose of Loan", ['CONSTRUCTION', 'EDUCATION', 'INVESTMENT', 'PERSONAL NEEDS', 'PURCHASE OF PROPERTY', 'PURCHASE OF VEHICLE', 'WORKING CAPITAL REQUIREMENT'])
-LNBASELDESC = st.selectbox("Loan Type", ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE', 'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED'])
-SEX = st.selectbox("Gender", ["M", "F"])
-AGE = st.slider("Age", min_value=18, max_value=80, step=1)
-CREDIT_CARD_USED = st.selectbox("Credit Card Used", ["Yes", "No"])
-DEBIT_CARD_USED = st.selectbox("Debit Card Used", ["Yes", "No"])
+# Title of the app
+st.title("Loan Default Risk Prediction")
+
+# Input fields for user data
+LNAMOUNT = st.number_input("Loan Amount", min_value=0)
+LNINTRATE = st.number_input("Interest Rate", min_value=0.0)
+LNINSTAMT = st.number_input("Installment Amount", min_value=0)
+AGE = st.number_input("Age", min_value=18)
+QSPURPOSEDES = st.selectbox("Loan Purpose", ['CONSTRUCTION', 'EDUCATION', 'INVESTMENT', 'PERSONAL NEEDS', 'PURCHASE OF PROPERTY', 'PURCHASE OF VEHICLE', 'WORKING CAPITAL REQUIREMENT'])
 QS_SECTOR = st.selectbox("Sector", ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTURING & LOGISTIC', 'FINANCIAL', 'CONSTRUCTION & INFRASTRUCTURE', 'EDUCATION', 'TECHNOLOGY & INNOVATION', 'TOURISM', 'HEALTHCARE', 'TRADERS', 'AGRICULTURE & FISHING', 'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV'])
-AVERAGE_SAGBAL = st.number_input("Average Savings Account Balance", min_value=0.0, step=100.0, format="%.2f")
+LNBASELDESC = st.selectbox("Loan Base Description", ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE', 'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED'])
+SEX = st.selectbox("Gender", ['M', 'F'])
+LNPAYFREQ = st.selectbox("Payment Frequency", [,'2','5', '12'])
+CREDIT_CARD_USED = st.selectbox("Credit Card Used", ['Yes', 'No'])
+DEBIT_CARD_USED = st.selectbox("Debit Card Used", ['Yes', 'No'])
+LNPERIOD_CATEGORY = st.selectbox("Loan Period Category", ['SHORT-TERM', 'MEDIUM-TERM', 'LONG-TERM'])
 
-# Prediction button
-if st.button("Predict Default Risk"):
-    # Prepare input data
-    input_data = {
-        'LNAMOUNT': LNAMOUNT,
-        'LNINTRATE': LNINTRATE,
-        'LNPERIOD': LNPERIOD,
-        'LNINSTAMT': LNINSTAMT,
-        'LNPAYFREQ': LNPAYFREQ,
-        'AGE': AGE,
-        'CREDIT_CARD_USED': 1 if CREDIT_CARD_USED == "Yes" else 0,
-        'DEBIT_CARD_USED': 1 if DEBIT_CARD_USED == "Yes" else 0,
-        'AVERAGE_SAGBAL': AVERAGE_SAGBAL,
-        'QSPURPOSEDES_' + QSPURPOSEDES: 1,
-        'LNBASELDESC_' + LNBASELDESC: 1,
-        'SEX_' + SEX: 1,
-        'QS_SECTOR_' + QS_SECTOR: 1
-    }
-    
-    # Create a DataFrame and align with training features
-    input_df = pd.DataFrame([input_data])
-    if isinstance(c_X_train, list):  
-        c_X_train = pd.DataFrame(c_X_train)  
+# Collect user inputs in a dictionary
+user_input = {
+    'LNAMOUNT': LNAMOUNT,
+    'LNINTRATE': LNINTRATE,
+    'LNINSTAMT': LNINSTAMT,
+    'AGE': AGE,
+    'QSPURPOSEDES': QSPURPOSEDES,
+    'QS_SECTOR': QS_SECTOR,
+    'LNBASELDESC': LNBASELDESC,
+    'SEX': SEX,
+    'LNPAYFREQ': LNPAYFREQ,
+    'CREDIT_CARD_USED': CREDIT_CARD_USED,
+    'DEBIT_CARD_USED': DEBIT_CARD_USED,
+    'LNPERIOD_CATEGORY': LNPERIOD_CATEGORY
+}
 
-    # Ensure all required columns exist in input_df
-    for col in c_X_train.columns:
-        if col not in input_df.columns:
-            input_df[col] = 0
+# Preprocess the input data
+input_data = preprocess_input(user_input)
 
-    # Align input_df with the columns in c_X_train
-    input_df = input_df[c_X_train.columns]
-    
-    # Scale numerical features
-    numeric_features = ['LNAMOUNT', 'LNINTRATE', 'LNPERIOD', 'LNINSTAMT', 'LNPAYFREQ', 'AGE', 'AVERAGE_SAGBAL']
-    input_df[numeric_features] = c_scaler.transform(input_df[numeric_features])
-    
-    # Predict default risk
-    prediction = classification_model.predict(input_df)
-    result = "Default" if prediction[0] == 1 else "No Default"
-    
-    # Display prediction result
-    st.write(f"Prediction: {result}")
+# Make prediction
+prediction = model.predict(input_data)
 
-# Reset button
-if st.button("Reset"):
-    st.experimental_rerun()
+# Show result
+if prediction == 1:
+    st.success("Loan Default Risk: Default")
+else:
+    st.success("Loan Default Risk: No Default")
