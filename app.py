@@ -23,10 +23,10 @@ with st.form(key='loan_form'):
     qsector = st.selectbox('Sector', ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTURING & LOGISTIC', 'FINANCIAL', 'CONSTRUCTION & INFRASTRUCTURE', 'EDUCATION', 'TECHNOLOGY & INNOVATION', 'TOURISM', 'HEALTHCARE', 'TRADERS', 'AGRICULTURE & FISHING', 'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV'])
     lnbase = st.selectbox('Base', ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE', 'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED'])
     sex = st.selectbox('Gender', ['M', 'F'])
-    lnpayfreq = st.selectbox('Payment Frequency', ['Monthly', 'Quarterly', 'Annually'])
-    credit_card_used = st.selectbox('Used Credit Card', ['Yes', 'No'])
-    debit_card_used = st.selectbox('Used Debit Card', ['Yes', 'No'])
-    lnperiod_category = st.selectbox('Loan Period Category', ['Short Term', 'Medium Term', 'Long Term'])
+    lnpayfreq = st.selectbox('Payment Frequency', ['2', '5', '12'])
+    credit_card_used = st.selectbox('Used Credit Card', ['No','Yes'])
+    debit_card_used = st.selectbox('Used Debit Card', ['No','Yes'])
+    lnperiod_category = st.selectbox('Loan Period Category', ['SHORT-TERM', 'MEDIUM-TERM', 'LONG-TERM'])
     lnamount = st.slider('Loan Amount', min_value=1000, max_value=1000000, step=1000)
     lninstamt = st.slider('Installment Amount', min_value=100, max_value=100000, step=100)
     average_sagbal = st.slider('Average Savings Account Balance', min_value=0, max_value=1000000, step=1000)
@@ -39,6 +39,11 @@ with st.form(key='loan_form'):
 if submit_button:
     # Create a DataFrame from user inputs
     user_input = pd.DataFrame({
+        'LNAMOUNT': [lnamount],
+        'LNINTRATE': [lnintrate],
+        'LNINSTAMT': [lninstamt],
+        'AGE': [age],
+        'AVERAGE_SAGBAL': [average_sagbal],
         'QSPURPOSEDES': [qspurposedes],
         'QS_SECTOR': [qsector],
         'LNBASELDESC': [lnbase],
@@ -46,13 +51,8 @@ if submit_button:
         'LNPAYFREQ': [lnpayfreq],
         'CREDIT_CARD_USED': [credit_card_used],
         'DEBIT_CARD_USED': [debit_card_used],
-        'LNPERIOD_CATEGORY': [lnperiod_category],
-        'LNAMOUNT': [lnamount],
-        'LNINSTAMT': [lninstamt],
-        'AVERAGE_SAGBAL': [average_sagbal],
-        'AGE': [age],
-        'LNINTRATE': [lnintrate]
-    })
+        'LNPERIOD_CATEGORY': [lnperiod_category]
+          })
 
     # Apply one-hot encoding to categorical inputs
     user_input = pd.get_dummies(user_input, columns=['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX', 'LNPAYFREQ', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED', 'LNPERIOD_CATEGORY'], drop_first=True)
