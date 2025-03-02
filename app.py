@@ -1,7 +1,7 @@
 import streamlit as st
 import joblib
 import pandas as pd
-import numpy as np
+#import numpy as np
 
 # Load the trained model, scaler, and features
 model = joblib.load('classification_model_personal.pkl')
