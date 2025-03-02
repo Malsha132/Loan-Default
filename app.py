@@ -33,11 +33,10 @@ lnintrate = st.number_input('Interest Rate', min_value=0.1, max_value=50.0, valu
 averagesagbal = st.number_input('Average Savings Balance', min_value=0, max_value=1000000, value=20000)
 
 # Prepare user input into a DataFrame
-input_data = pd.DataFrame([[sex, age, credit_card_used, debit_card_used, qs_sector, qspurposedes, lnbaseldesc,
-                            lnpayfreq, lnperiod_category, lnamount, lninstamt, lnintrate, averagesagbal]],
-                          columns=['SEX', 'AGE', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED', 'QS_SECTOR', 'QSPURPOSEDES', 
-                                   'LNBASELDESC', 'LNPAYFREQ', 'LNPERIOD_CATEGORY', 'LNAMOUNT', 'LNINSTAMT', 
-                                   'LNINTRATE', 'AVERAGE_SAGBAL'])
+input_data = pd.DataFrame([[lnamount,lnintrate,lninstamt, age,averagesagbal,qspurposedes, qs_sector, lnbaseldesc,sex, lnpayfreq,credit_card_used, debit_card_used, 
+                             lnperiod_category]],
+                          columns=['LNAMOUNT','LNINTRATE','LNINSTAMT', 'AGE','AVERAGE_SAGBAL','QSPURPOSEDES',  'QS_SECTOR','LNBASELDESC', 'SEX','LNPAYFREQ',  'CREDIT_CARD_USED', 'DEBIT_CARD_USED',
+                                    'LNPERIOD_CATEGORY'])
 
 # One-hot encode the categorical variables (like in your training data)
 input_data_encoded = pd.get_dummies(input_data, columns=['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX', 
