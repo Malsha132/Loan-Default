@@ -1,79 +1,69 @@
 import streamlit as st
-import pickle
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-# Load the trained model and scaler
-with open("classification_model_personal.pkl", "rb") as model_file:
-    model = pickle.load(model_file)
+# Load saved models and scaler
+classification_model = joblib.load('classification_model_personal.pkl')
+c_scaler = joblib.load('c_scaler.pkl')
+c_X_train = joblib.load('c_X_train.pkl')
 
-with open("c_scaler.pkl", "rb") as scaler_file:
-    scaler = pickle.load(scaler_file)
+# Title
+st.title('Loan Default Risk Predictor')
 
-# Load reference training data structure
-X_train_ref = pickle.load(open("c_X_train.pkl", "rb"))
-
-st.title("Loan Default Prediction")
-st.write("Enter the loan details below to predict the default status.")
-
-# Input fields
-LNAMOUNT = st.slider("Loan Amount", min_value=1000.0, max_value=1000000.0, step=1000.0)
-LNINTRATE = st.slider("Interest Rate", min_value=0.0, max_value=30.0, step=0.1)
-LNINSTAMT = st.slider("Installment Amount", min_value=100.0, max_value=50000.0, step=100.0)
-LNPAYFREQ = st.selectbox("Payment Frequency", ['2', '5', '12'])
+# User input fields
+LNAMOUNT = st.number_input("Loan Amount", min_value=1000, step=1000, format="%.2f")
+LNINTRATE = st.number_input("Interest Rate (%)", min_value=0.1, step=0.1, format="%.2f")
+LNPERIOD = st.slider("Loan Period (Months)", min_value=6, max_value=360, step=6)
+LNINSTAMT = st.number_input("Installment Amount", min_value=100, step=100, format="%.2f")
+LNPAYFREQ = st.selectbox("Payment Frequency", [1, 2, 3, 4])
 QSPURPOSEDES = st.selectbox("Purpose of Loan", ['CONSTRUCTION', 'EDUCATION', 'INVESTMENT', 'PERSONAL NEEDS', 'PURCHASE OF PROPERTY', 'PURCHASE OF VEHICLE', 'WORKING CAPITAL REQUIREMENT'])
 LNBASELDESC = st.selectbox("Loan Type", ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE', 'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED'])
 SEX = st.selectbox("Gender", ["M", "F"])
 AGE = st.slider("Age", min_value=18, max_value=80, step=1)
 CREDIT_CARD_USED = st.selectbox("Credit Card Used", ["Yes", "No"])
 DEBIT_CARD_USED = st.selectbox("Debit Card Used", ["Yes", "No"])
-QS_SECTOR = st.selectbox("Sector", ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTURING & LOGISTIC', 'FINANCIAL', 
-    'CONSTRUCTION & INFRASTRUCTURE', 'EDUCATION', 'TECHNOLOGY & INNOVATION', 
-    'TOURISM', 'HEALTHCARE', 'TRADERS', 'AGRICULTURE & FISHING', 'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV'])
-LNPERIOD_CATEGORY = st.selectbox("Loan Period Category", ['SHORT-TERM', 'MEDIUM-TERM', 'LONG-TERM'])
-AVERAGE_SAGBAL = st.slider("Average Savings Balance", min_value=0.0, max_value=1000000.0, step=500.0)
+QS_SECTOR = st.selectbox("Sector", ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTURING & LOGISTIC', 'FINANCIAL', 'CONSTRUCTION & INFRASTRUCTURE', 'EDUCATION', 'TECHNOLOGY & INNOVATION', 'TOURISM', 'HEALTHCARE', 'TRADERS', 'AGRICULTURE & FISHING', 'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV'])
+AVERAGE_SAGBAL = st.number_input("Average Savings Account Balance", min_value=0.0, step=100.0, format="%.2f")
 
-# Create input DataFrame
-input_data = pd.DataFrame({
-    "LNAMOUNT": [LNAMOUNT],
-    "LNINTRATE": [LNINTRATE],
-    "LNINSTAMT": [LNINSTAMT],
-    "LNPAYFREQ": [LNPAYFREQ],
-    "QSPURPOSEDES": [QSPURPOSEDES],
-    "LNBASELDESC": [LNBASELDESC],
-    "SEX": [SEX],
-    "AGE": [AGE],
-    "CREDIT_CARD_USED": [CREDIT_CARD_USED],
-    "DEBIT_CARD_USED": [DEBIT_CARD_USED],
-    "QS_SECTOR": [QS_SECTOR],
-    "LNPERIOD_CATEGORY": [LNPERIOD_CATEGORY],
-    "AVERAGE_SAGBAL": [AVERAGE_SAGBAL]
-})
-
-# One-hot encode categorical variables
-input_data = pd.get_dummies(input_data, columns=["QSPURPOSEDES", "QS_SECTOR", "LNBASELDESC","SEX","LNPAYFREQ", 'CREDIT_CARD_USED','DEBIT_CARD_USED',"LNPERIOD_CATEGORY"], drop_first=True)
-
-# Ensure all required columns exist
-missing_cols = set(X_train_ref.columns) - set(input_data.columns)
-for col in missing_cols:
-    input_data[col] = 0  # Add missing columns with default value 0
-
-# Ensure column order matches training data
-input_data = input_data[X_train_ref.columns]
-
-# Standardize numerical features
-num_features = ["LNAMOUNT", "LNINSTAMT", "AVERAGE_SAGBAL", "AGE", "LNINTRATE"]
-input_data[num_features] = scaler.transform(input_data[num_features])
-
-# Predict
-if st.button("Predict"):
-    prediction = model.predict(input_data)
+# Prediction button
+if st.button("Predict Default Risk"):
+    # Prepare input data
+    input_data = {
+        'LNAMOUNT': LNAMOUNT,
+        'LNINTRATE': LNINTRATE,
+        'LNPERIOD': LNPERIOD,
+        'LNINSTAMT': LNINSTAMT,
+        'LNPAYFREQ': LNPAYFREQ,
+        'AGE': AGE,
+        'CREDIT_CARD_USED': 1 if CREDIT_CARD_USED == "Yes" else 0,
+        'DEBIT_CARD_USED': 1 if DEBIT_CARD_USED == "Yes" else 0,
+        'AVERAGE_SAGBAL': AVERAGE_SAGBAL,
+        'QSPURPOSEDES_' + QSPURPOSEDES: 1,
+        'LNBASELDESC_' + LNBASELDESC: 1,
+        'SEX_' + SEX: 1,
+        'QS_SECTOR_' + QS_SECTOR: 1
+    }
+    
+    # Create a DataFrame and align with training features
+    input_df = pd.DataFrame([input_data])
+    for col in c_X_train:
+        if col not in input_df.columns:
+            input_df[col] = 0
+    input_df = input_df[c_X_train.columns]
+    
+    # Scale numerical features
+    numeric_features = ['LNAMOUNT', 'LNINTRATE', 'LNPERIOD', 'LNINSTAMT', 'LNPAYFREQ', 'AGE', 'AVERAGE_SAGBAL']
+    input_df[numeric_features] = c_scaler.transform(input_df[numeric_features])
+    
+    # Predict default risk
+    prediction = classification_model.predict(input_df)
     result = "Default" if prediction[0] == 1 else "No Default"
-    st.write(f"### Prediction: {result}")
+    
+    # Display prediction result
+    st.write(f"Prediction: {result}")
 
 # Reset button
-def reset_inputs():
+if st.button("Reset"):
     st.experimental_rerun()
-
-st.button("Reset", on_click=reset_inputs)
