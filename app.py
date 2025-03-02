@@ -55,12 +55,13 @@ input_data = pd.DataFrame([[lnamount, lnintrate, lninstamt, age, averagesagbal, 
                                    'DEBIT_CARD_USED', 'LNPERIOD_CATEGORY'])
 
 # Convert categorical values to match training data
-input_data['CREDIT_CARD_USED'] = input_data['CREDIT_CARD_USED'].map({'No': 0, 'Yes': 1})
-input_data['DEBIT_CARD_USED'] = input_data['DEBIT_CARD_USED'].map({'No': 0, 'Yes': 1})
+#input_data['CREDIT_CARD_USED'] = input_data['CREDIT_CARD_USED'].map({'No': 0, 'Yes': 1})
+#input_data['DEBIT_CARD_USED'] = input_data['DEBIT_CARD_USED'].map({'No': 0, 'Yes': 1})
 
 # One-hot encode categorical variables
 input_data_encoded = pd.get_dummies(input_data, columns=['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX',
-                                                         'LNPAYFREQ', 'LNPERIOD_CATEGORY'], drop_first=True)
+                                                         'LNPAYFREQ', 'CREDIT_CARD_USED',
+                                   'DEBIT_CARD_USED','LNPERIOD_CATEGORY'], drop_first=True)
 
 # Ensure input matches training feature set
 input_data_encoded = input_data_encoded.reindex(columns=columns, fill_value=0)
