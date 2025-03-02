@@ -12,17 +12,16 @@ columns = joblib.load('c_X_train.pkl')
 st.title("Loan Default Risk Prediction")
 # Dropdowns for categorical variables
 sex = st.selectbox('Sex', ['M', 'F'])
-qs_sector = st.selectbox('Sector', ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTURING & LOGISTIC', 'FINANCIAL', 
-                                   'CONSTRUCTION & INFRASTRUCTURE', 'EDUCATION', 'TECHNOLOGY & INNOVATION', 
-                                   'TOURISM', 'HEALTHCARE', 'TRADERS', 'AGRICULTURE & FISHING', 
-                                   'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV'])
+qs_sector = st.selectbox('Sector', ['AGRICULTURE & FISHING','CONSTRUCTION & INFRASTRUCTURE','CONSUMPTION', 'EDUCATION', 'FINANCIAL', 'HEALTHCARE','MANUFACTURING & LOGISTIC',  'OTHER SERVICES',  'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV', 
+                                   'TECHNOLOGY & INNOVATION', 'TOURISM', 'TRADERS'
+                                     ])
 qspurposedes = st.selectbox('Loan Purpose', ['CONSTRUCTION', 'EDUCATION', 'INVESTMENT', 'PERSONAL NEEDS', 
                                              'PURCHASE OF PROPERTY', 'PURCHASE OF VEHICLE', 'WORKING CAPITAL REQUIREMENT'])
 lnbaseldesc = st.selectbox('Loan Base Description', ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE', 
                                                    'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED'])
 lnpayfreq = st.selectbox('Payment Frequency', ['2', '5', '12'])
-credit_card_used = st.selectbox('Credit Card Used', ['Yes', 'No'])
-debit_card_used = st.selectbox('Debit Card Used', ['Yes', 'No'])
+credit_card_used = st.selectbox('Credit Card Used', ['No''Yes'])
+debit_card_used = st.selectbox('Debit Card Used', ['No''Yes'])
 lnperiod_category = st.selectbox('Loan Period Category', ['SHORT-TERM', 'MEDIUM-TERM', 'LONG-TERM'])
 
 # Slider for numerical inputs
