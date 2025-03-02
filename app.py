@@ -1,75 +1,69 @@
 import streamlit as st
+import joblib
 import pandas as pd
 import numpy as np
-import pickle
 
-# Load the trained model and scaler
-model_path = 'classification_model_personal.pkl'
-scaler_path = 'c_scaler.pkl'
-columns_path = 'c_X_train.pkl'  # To ensure feature consistency
+# Load the trained model, scaler, and features
+model = joblib.load('classification_model_personal.pkl')
+scaler = joblib.load('c_scaler.pkl')
+columns = joblib.load('c_X_train.pkl')
 
-with open(model_path, 'rb') as file:
-    model = pickle.load(file)
-
-with open(scaler_path, 'rb') as file:
-    scaler = pickle.load(file)
-
-with open(columns_path, 'rb') as file:
-    train_columns = pickle.load(file).columns.tolist()
-
-# Define categorical options
-qspurpose_options = ['CONSTRUCTION', 'EDUCATION', 'INVESTMENT', 'PERSONAL NEEDS', 'PURCHASE OF PROPERTY', 'PURCHASE OF VEHICLE', 'WORKING CAPITAL REQUIREMENT']
-lnbaseldesc_options = ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE', 'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED']
-sex_options = ['M', 'F']
-credit_card_options = ['Yes', 'No']
-debit_card_options = ['Yes', 'No']
-qs_sector_options = ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTURING & LOGISTIC', 'FINANCIAL', 'CONSTRUCTION & INFRASTRUCTURE', 'EDUCATION', 'TECHNOLOGY & INNOVATION', 'TOURISM', 'HEALTHCARE', 'TRADERS', 'AGRICULTURE & FISHING', 'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV']
-
-# Preprocessing function
-def preprocess_input(user_input):
-    input_data = pd.DataFrame([user_input])
-    
-    # Define categorical features
-    categorical_features = ['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED']
-    
-    # One-hot encoding
-    input_data = pd.get_dummies(input_data, columns=categorical_features)
-    
-    # Align with training data columns (fill missing columns with 0)
-    input_data = input_data.reindex(columns=train_columns, fill_value=0)
-    
-    # Scale numerical features
-    num_features = ['LNAMOUNT', 'LNINSTAMT', 'AVERAGE_SAGBAL', 'AGE', 'LNINTRATE']
-    input_data[num_features] = scaler.transform(input_data[num_features])
-    
-    return input_data
-
-# Streamlit App
+# Set Streamlit page title
 st.title("Loan Default Risk Prediction")
-st.write("Enter loan details to predict the risk of default.")
+# Dropdowns for categorical variables
+sex = st.selectbox('Sex', ['M', 'F'])
+qs_sector = st.selectbox('Sector', ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTURING & LOGISTIC', 'FINANCIAL', 
+                                   'CONSTRUCTION & INFRASTRUCTURE', 'EDUCATION', 'TECHNOLOGY & INNOVATION', 
+                                   'TOURISM', 'HEALTHCARE', 'TRADERS', 'AGRICULTURE & FISHING', 
+                                   'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV'])
+qspurposedes = st.selectbox('Loan Purpose', ['CONSTRUCTION', 'EDUCATION', 'INVESTMENT', 'PERSONAL NEEDS', 
+                                             'PURCHASE OF PROPERTY', 'PURCHASE OF VEHICLE', 'WORKING CAPITAL REQUIREMENT'])
+lnbaseldesc = st.selectbox('Loan Base Description', ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE', 
+                                                   'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED'])
+lnpayfreq = st.selectbox('Payment Frequency', ['2', '5', '12'])
+credit_card_used = st.selectbox('Credit Card Used', ['Yes', 'No'])
+debit_card_used = st.selectbox('Debit Card Used', ['Yes', 'No'])
+lnperiod_category = st.selectbox('Loan Period Category', ['SHORT-TERM', 'MEDIUM-TERM', 'LONG-TERM'])
 
-# User input fields
-user_input = {
-    'QSPURPOSEDES': st.selectbox("Loan Purpose", qspurpose_options),
-    'LNAMOUNT': st.slider("Loan Amount", 1000, 1000000, 50000),
-    'LNINSTAMT': st.slider("Installment Amount", 500, 50000, 5000),
-    'LNBASELDESC': st.selectbox("Customer Segment", lnbaseldesc_options),
-    'SEX': st.selectbox("Gender", sex_options),
-    'AGE': st.slider("Age", 18, 80, 30),
-    'CREDIT_CARD_USED': st.selectbox("Credit Card Used", credit_card_options),
-    'DEBIT_CARD_USED': st.selectbox("Debit Card Used", debit_card_options),
-    'QS_SECTOR': st.selectbox("Sector", qs_sector_options),
-    'AVERAGE_SAGBAL': st.slider("Avg Savings Balance", 0, 1000000, 10000),
-    'LNINTRATE': st.slider("Interest Rate", 0.1, 20.0, 5.0)
-}
+# Slider for numerical inputs
+age = st.slider('Age', min_value=18, max_value=80, value=30)
+lnamount = st.number_input('Loan Amount', min_value=1000, max_value=1000000, value=50000)
+lninstamt = st.number_input('Installment Amount', min_value=100, max_value=10000, value=1000)
+lnintrate = st.number_input('Interest Rate', min_value=0.1, max_value=50.0, value=12.0)
+averagesagbal = st.number_input('Average Savings Balance', min_value=0, max_value=1000000, value=20000)
 
-# Prediction button
-if st.button("Predict Loan Default Risk"):
-    processed_input = preprocess_input(user_input)
-    prediction = model.predict(processed_input)[0]
-    result = "Default" if prediction == 1 else "Not Default"
-    st.write(f"### Prediction: {result}")
+# Prepare user input into a DataFrame
+input_data = pd.DataFrame([[sex, age, credit_card_used, debit_card_used, qs_sector, qspurposedes, lnbaseldesc,
+                            lnpayfreq, lnperiod_category, lnamount, lninstamt, lnintrate, averagesagbal]],
+                          columns=['SEX', 'AGE', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED', 'QS_SECTOR', 'QSPURPOSEDES', 
+                                   'LNBASELDESC', 'LNPAYFREQ', 'LNPERIOD_CATEGORY', 'LNAMOUNT', 'LNINSTAMT', 
+                                   'LNINTRATE', 'AVERAGE_SAGBAL'])
 
-# Reset button
-if st.button("Reset Inputs"):
+# One-hot encode the categorical variables (like in your training data)
+input_data_encoded = pd.get_dummies(input_data, columns=['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX', 
+                                                         'LNPAYFREQ', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED', 
+                                                         'LNPERIOD_CATEGORY'], drop_first=True)
+
+# Ensure the columns match the ones used in training
+input_data_encoded = input_data_encoded.reindex(columns=columns, fill_value=0)
+
+# Scale the numerical features
+input_data_scaled = scaler.transform(input_data_encoded[['LNAMOUNT', 'LNINSTAMT', 'AVERAGE_SAGBAL', 'AGE', 'LNINTRATE']])
+input_data_encoded[['LNAMOUNT', 'LNINSTAMT', 'AVERAGE_SAGBAL', 'AGE', 'LNINTRATE']] = input_data_scaled
+# Make prediction
+prediction = model.predict(input_data_encoded)
+
+# Display prediction result
+if prediction == 1:
+    st.write("The loan default risk is HIGH.")
+else:
+    st.write("The loan default risk is LOW.")
+if st.button('Reset'):
     st.experimental_rerun()
+
+
+
+
+
+
+
