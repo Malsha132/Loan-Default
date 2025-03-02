@@ -1,15 +1,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import pickle
+import joblib
 
-# Load pickle files
-with open("classification_model_personal.pkl", "rb") as model_file:
-    model = pickle.load(model_file)
-with open("c_scaler.pkl", "rb") as scaler_file:
-    scaler = pickle.load(scaler_file)
-with open("c_X_train.pkl", "rb") as train_file:
-    X_train_ref = pickle.load(train_file)
+# Load pickle files using joblib
+model = joblib.load("classification_model_personal.pkl")
+scaler = joblib.load("c_scaler.pkl")
+X_train_ref = joblib.load("c_X_train.pkl")
 
 # Extract column names for one-hot encoding
 categorical_columns = ['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX', 'LNPAYFREQ', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED', 'LNPERIOD_CATEGORY']
@@ -62,3 +59,4 @@ if st.button("Predict"):
 # Reset button
 if st.button("Reset"):
     st.experimental_rerun()
+
