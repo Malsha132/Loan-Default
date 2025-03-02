@@ -9,8 +9,15 @@ with open("classification_model_personal.pkl", "rb") as model_file:
 with open("c_scaler.pkl", "rb") as scaler_file:
     scaler = pickle.load(scaler_file)
 
+# Load expected feature names correctly
 with open("c_X_train.pkl", "rb") as x_train_file:
-    columns = pickle.load(x_train_file).columns  # Expected feature columns
+    X_train = pickle.load(x_train_file)
+
+# Ensure X_train is a DataFrame
+if isinstance(X_train, pd.DataFrame):
+    expected_columns = X_train.columns
+else:
+    raise ValueError("The loaded X_train is not a DataFrame. Please check the saved pickle file.")
 
 # Streamlit App
 st.title("Loan Default Prediction")
@@ -20,7 +27,7 @@ LNAMOUNT = st.number_input("Loan Amount", min_value=0.0, step=5000.0)
 LNINTRATE = st.number_input("Interest Rate (%)", min_value=0.0, step=0.1)
 LNPERIOD = st.number_input("Loan Period (Months)", min_value=1, step=1)
 LNINSTAMT = st.number_input("Installment Amount", min_value=0.0, step=100.0)
-LNPAYFREQ = st.selectbox("Payment Frequency", [1, 2])  # Example values
+LNPAYFREQ = st.selectbox("Payment Frequency", [1, 2])
 QSPURPOSEDES = st.selectbox("Loan Purpose", ['CONSTRUCTION', 'EDUCATION', 'INVESTMENT', 'PERSONAL NEEDS', 'PURCHASE OF PROPERTY', 'PURCHASE OF VEHICLE', 'WORKING CAPITAL REQUIREMENT'])
 LNBASELDESC = st.selectbox("Customer Segment", ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE', 'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED'])
 SEX = st.selectbox("Gender", ['M', 'F'])
@@ -37,7 +44,6 @@ input_data = pd.DataFrame([[LNAMOUNT, LNINTRATE, LNPERIOD, LNINSTAMT, LNPAYFREQ,
 input_data_encoded = pd.get_dummies(input_data, drop_first=True)
 
 # Align with expected model columns
-expected_columns = list(columns)  # Ensure expected feature names are loaded
 input_data_encoded = input_data_encoded.reindex(columns=expected_columns, fill_value=0)
 
 # Normalize numerical features
@@ -51,5 +57,5 @@ if st.button("Predict Loan Default"):
     st.success(f"Prediction: {result}")
 
 # Debugging (if needed)
-st.write("Expected Columns:", expected_columns)
-st.write("Input Data Columns:", input_data_encoded.columns)
+st.write("Expected Columns:", expected_columns.tolist())
+st.write("Input Data Columns:", input_data_encoded.columns.tolist())
