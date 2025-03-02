@@ -52,12 +52,12 @@ if submit_button:
         'CREDIT_CARD_USED': [credit_card_used],
         'DEBIT_CARD_USED': [debit_card_used],
         'LNPERIOD_CATEGORY': [lnperiod_category]
-          })
+    })
 
     # Apply one-hot encoding to categorical inputs
     user_input = pd.get_dummies(user_input, columns=['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX', 'LNPAYFREQ', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED', 'LNPERIOD_CATEGORY'], drop_first=True)
 
-    # Add missing columns from the training set (to ensure consistency)
+    # Check and add missing columns from the training set (to ensure consistency)
     missing_cols = set(columns) - set(user_input.columns)
     for col in missing_cols:
         user_input[col] = 0  # Add missing columns with value 0
