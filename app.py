@@ -6,7 +6,7 @@ import pandas as pd
 # Load the trained model, scaler, and features
 model = joblib.load('classification_model_personal.pkl')
 scaler = joblib.load('c_scaler.pkl')
-columns = joblib.load('c_X_train.pkl')
+#columns = joblib.load('c_X_train.pkl')
 
 # Set Streamlit page title
 st.title("Loan Default Risk Prediction")
