@@ -1,66 +1,63 @@
-import streamlit as st
-import pandas as pd
+import pickle
 import joblib
+import pandas as pd
+import streamlit as st
 from sklearn.preprocessing import StandardScaler
 
-# Load the saved model, scaler, and columns list
-model = joblib.load("classification_model_personal.pkl")
-scaler = joblib.load("c_scaler.pkl")
-columns = joblib.load("c_X_train.pkl")
+# Load the saved model, scaler, and feature columns
+model = joblib.load('classification_model_personal.pkl')
+scaler = joblib.load('c_scaler.pkl')
+X_train_columns = joblib.load('c_X_train.pkl')
 
-# Streamlit app title
-st.title('Loan Default Risk Prediction')
-
-# Input form for loan details
+# Collect user inputs for loan details
 loan_amount = st.slider('Loan Amount', 1000, 100000, 10000)
 interest_rate = st.slider('Interest Rate (%)', 1.0, 25.0, 5.0)
-loan_period = st.slider('Loan Period (Months)', 1, 60, 12)
 installment_amount = st.slider('Installment Amount', 100, 5000, 300)
 payment_frequency = st.selectbox('Payment Frequency', ['Monthly', 'Quarterly', 'Yearly'])
 sector = st.selectbox('Sector', ['CONSUMPTION', 'TOURISM', 'CONSTRUCTION', 'HEALTHCARE', 'MANUFACTURING', 'TECHNOLOGY'])
-age = st.slider('Age', 18, 80, 30)
-average_savings_balance = st.slider('Average Savings Balance', 0, 100000, 5000)
-credit_card_used = st.selectbox('Credit Card Used', [True, False])
-debit_card_used = st.selectbox('Debit Card Used', [True, False])
+purpose = st.selectbox('Loan Purpose', ['Personal', 'Mortgage', 'Auto Loan'])
+gender = st.selectbox('Gender', ['Male', 'Female'])
+age = st.slider('Age', 18, 100, 30)
+credit_card_used = st.selectbox('Credit Card Used', ['Yes', 'No'])
+debit_card_used = st.selectbox('Debit Card Used', ['Yes', 'No'])
+loan_period_category = st.selectbox('Loan Period Category', ['Short-term', 'Medium-term', 'Long-term'])
 
-# Create DataFrame from user input
+# Create a DataFrame from inputs
 input_data = pd.DataFrame({
-    'Loan Amount': [loan_amount],
-    'Interest Rate': [interest_rate],
-    'Loan Period': [loan_period],
-    'Installment Amount': [installment_amount],
-    'Payment Frequency': [payment_frequency],
-    'Sector': [sector],
-    'Age': [age],
-    'Average Savings Balance': [average_savings_balance],
-    'Credit Card Used': [credit_card_used],
-    'Debit Card Used': [debit_card_used]
+    'LNAMOUNT': [loan_amount],
+    'LNINTRATE': [interest_rate],
+    'LNINSTAMT': [installment_amount],
+    'LNPAYFREQ': [payment_frequency],
+    'QSPURPOSEDES': [purpose],
+    'LNBASELDESC': [sector],
+    'SEX': [gender],
+    'AGE': [age],
+    'CREDIT_CARD_USED': [credit_card_used],
+    'DEBIT_CARD_USED': [debit_card_used],
+    'QS_SECTOR': [sector],
+    'LNPERIOD_CATEGORY': [loan_period_category],
+    'AVERAGE_SAGBAL': [0]  # You can set this dynamically if needed
 })
 
-# Apply one-hot encoding to categorical columns
-input_data_encoded = pd.get_dummies(input_data, columns=['Payment Frequency', 'Sector'], drop_first=True)
+# One-hot encode categorical variables
+input_data_encoded = pd.get_dummies(input_data, columns=X_train_columns, drop_first=True)
 
-# Ensure the same columns as the training data
-missing_cols = set(columns) - set(input_data_encoded.columns)
-for col in missing_cols:
-    input_data_encoded[col] = 0
-input_data_encoded = input_data_encoded[columns]
+# Ensure that the columns of input match the trained columns
+input_data_encoded = input_data_encoded.reindex(columns=X_train_columns, fill_value=0)
 
-# Apply scaling to the numerical columns
-input_data_scaled = scaler.transform(input_data_encoded[['Loan Amount', 'Interest Rate', 'Installment Amount', 'Age', 'Average Savings Balance']])
+# Scale the numeric features
+input_data_scaled = scaler.transform(input_data_encoded[['LNAMOUNT', 'LNINSTAMT', 'AVERAGE_SAGBAL', 'AGE', 'LNINTRATE']])
 
-# Add scaled numerical values back to the DataFrame
-input_data_encoded[['Loan Amount', 'Interest Rate', 'Installment Amount', 'Age', 'Average Savings Balance']] = input_data_scaled
+# Prepare the full input for prediction
+input_data_encoded[['LNAMOUNT', 'LNINSTAMT', 'AVERAGE_SAGBAL', 'AGE', 'LNINTRATE']] = input_data_scaled
 
-# Make a prediction using the trained model
+
+ 
+# Make prediction using the model
 prediction = model.predict(input_data_encoded)
 
-# Display prediction result
+# Display the result
 if prediction == 1:
     st.write('Prediction: Loan Default Risk (Yes)')
 else:
     st.write('Prediction: No Loan Default Risk')
-
-# Reset button functionality
-if st.button('Reset'):
-    st.experimental_rerun()
