@@ -23,10 +23,10 @@ with st.form(key='loan_form'):
     qsector = st.selectbox('Sector', ['OTHER SERVICES', 'CONSUMPTION', 'MANUFACTURING & LOGISTIC', 'FINANCIAL', 'CONSTRUCTION & INFRASTRUCTURE', 'EDUCATION', 'TECHNOLOGY & INNOVATION', 'TOURISM', 'HEALTHCARE', 'TRADERS', 'AGRICULTURE & FISHING', 'PROFESSIONAL, SCIENTIFIC & TECHNICAL ACTIV'])
     lnbase = st.selectbox('Base', ['FINANCIAL INSTITUTIONS', 'INDIVIDUALS', 'MICRO FINANCE', 'MIDDLE MARKET CORPORATES', 'SME', 'UNCLASSIFIED'])
     sex = st.selectbox('Gender', ['M', 'F'])
-    lnpayfreq = st.selectbox('Payment Frequency', ['2', '5', '12'])
+    lnpayfreq = st.selectbox('Payment Frequency', ['Monthly', 'Quarterly', 'Annually'])
     credit_card_used = st.selectbox('Used Credit Card', ['Yes', 'No'])
     debit_card_used = st.selectbox('Used Debit Card', ['Yes', 'No'])
-    lnperiod_category = st.selectbox('Loan Period Category', ['SHORT-TERM', 'MEDIUM-TERM', 'LONG-TERM'])
+    lnperiod_category = st.selectbox('Loan Period Category', ['Short Term', 'Medium Term', 'Long Term'])
     lnamount = st.slider('Loan Amount', min_value=1000, max_value=1000000, step=1000)
     lninstamt = st.slider('Installment Amount', min_value=100, max_value=100000, step=100)
     average_sagbal = st.slider('Average Savings Account Balance', min_value=0, max_value=1000000, step=1000)
@@ -56,11 +56,13 @@ if submit_button:
 
     # Apply one-hot encoding to categorical inputs
     user_input = pd.get_dummies(user_input, columns=['QSPURPOSEDES', 'QS_SECTOR', 'LNBASELDESC', 'SEX', 'LNPAYFREQ', 'CREDIT_CARD_USED', 'DEBIT_CARD_USED', 'LNPERIOD_CATEGORY'], drop_first=True)
-    
-    # Add missing columns if any
+
+    # Add missing columns from the training set (to ensure consistency)
     missing_cols = set(columns) - set(user_input.columns)
     for col in missing_cols:
-        user_input[col] = 0
+        user_input[col] = 0  # Add missing columns with value 0
+
+    # Reorder columns to match the original training data
     user_input = user_input[columns]
 
     # Make the prediction
